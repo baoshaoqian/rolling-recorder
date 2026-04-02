@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -165,6 +166,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this,
                         "Battery optimization is already disabled",
                         Toast.LENGTH_SHORT).show();
+                updateUI();
             }
         }
     }
@@ -175,6 +177,17 @@ public class MainActivity extends AppCompatActivity {
         boolean running = RecordingService.isRunning;
         statusText.setText(running ? "Status: Recording" : "Status: Idle");
         toggleButton.setText(running ? "Stop Recording" : "Start Recording");
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PowerManager pm = getSystemService(PowerManager.class);
+            if (pm != null && pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                batteryButton.setVisibility(View.GONE);
+            } else {
+                batteryButton.setVisibility(View.VISIBLE);
+            }
+        } else {
+            batteryButton.setVisibility(View.GONE);
+        }
     }
 
     private void refreshRecordingList() {
