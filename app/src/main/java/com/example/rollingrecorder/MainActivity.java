@@ -57,7 +57,15 @@ public class MainActivity extends AppCompatActivity {
         // Recording list
         RecyclerView recyclerView = findViewById(R.id.recordingsRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new RecordingListAdapter(this, new ArrayList<>());
+        adapter = new RecordingListAdapter(this, new ArrayList<>(), item -> {
+            boolean deleted = StorageHelper.deleteRecording(this, item);
+            if (deleted) {
+                Toast.makeText(this, R.string.recording_deleted, Toast.LENGTH_SHORT).show();
+                refreshRecordingList();
+            } else {
+                Toast.makeText(this, R.string.recording_delete_failed, Toast.LENGTH_LONG).show();
+            }
+        });
         recyclerView.setAdapter(adapter);
 
         // Toggle recording
@@ -155,19 +163,17 @@ public class MainActivity extends AppCompatActivity {
     // ── battery optimisation ────────────────────────────────────────────
 
     private void requestBatteryOptimizationExemption() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PowerManager pm = getSystemService(PowerManager.class);
-            if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
-                Intent intent = new Intent(
-                        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                        Uri.parse("package:" + getPackageName()));
-                startActivity(intent);
-            } else {
-                Toast.makeText(this,
-                        "Battery optimization is already disabled",
-                        Toast.LENGTH_SHORT).show();
-                updateUI();
-            }
+        PowerManager pm = getSystemService(PowerManager.class);
+        if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
+            Intent intent = new Intent(
+                    Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                    Uri.parse("package:" + getPackageName()));
+            startActivity(intent);
+        } else {
+            Toast.makeText(this,
+                    "Battery optimization is already disabled",
+                    Toast.LENGTH_SHORT).show();
+            updateUI();
         }
     }
 
@@ -178,15 +184,11 @@ public class MainActivity extends AppCompatActivity {
         statusText.setText(running ? "Status: Recording" : "Status: Idle");
         toggleButton.setText(running ? "Stop Recording" : "Start Recording");
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PowerManager pm = getSystemService(PowerManager.class);
-            if (pm != null && pm.isIgnoringBatteryOptimizations(getPackageName())) {
-                batteryButton.setVisibility(View.GONE);
-            } else {
-                batteryButton.setVisibility(View.VISIBLE);
-            }
-        } else {
+        PowerManager pm = getSystemService(PowerManager.class);
+        if (pm != null && pm.isIgnoringBatteryOptimizations(getPackageName())) {
             batteryButton.setVisibility(View.GONE);
+        } else {
+            batteryButton.setVisibility(View.VISIBLE);
         }
     }
 

@@ -74,6 +74,18 @@ public class StorageHelper {
 
     // ── deletion ────────────────────────────────────────────────────────
 
+    public static boolean deleteRecording(Context context, RecordingItem item) {
+        if (item == null) {
+            return false;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return deleteRecordingViaMediaStore(context, item.getUri(), item.getName());
+        } else {
+            return deleteRecordingViaFile(item.getName());
+        }
+    }
+
     private static boolean deleteOldestRecording(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             return deleteOldestViaMediaStore(context);
@@ -89,8 +101,17 @@ public class StorageHelper {
 
         Arrays.sort(files, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
         File oldest = files[0];
-        Log.i(TAG, "Deleting oldest recording (file): " + oldest.getName());
-        return oldest.delete();
+        return deleteRecordingViaFile(oldest.getName());
+    }
+
+    private static boolean deleteRecordingViaFile(String fileName) {
+        File recordingFile = new File(getRecordingDir(), fileName);
+        if (!recordingFile.exists()) {
+            return false;
+        }
+
+        Log.i(TAG, "Deleting recording (file): " + recordingFile.getName());
+        return recordingFile.delete();
     }
 
     private static boolean deleteOldestViaMediaStore(Context context) {
@@ -113,12 +134,18 @@ public class StorageHelper {
                 String name = cursor.getString(
                         cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME));
                 Uri deleteUri = Uri.withAppendedPath(collection, String.valueOf(id));
-                int deleted = resolver.delete(deleteUri, null, null);
-                if (deleted > 0) {
-                    Log.i(TAG, "Deleted oldest recording (MediaStore): " + name);
-                    return true;
-                }
+                return deleteRecordingViaMediaStore(context, deleteUri, name);
             }
+        }
+        return false;
+    }
+
+    private static boolean deleteRecordingViaMediaStore(Context context, Uri deleteUri, String name) {
+        ContentResolver resolver = context.getContentResolver();
+        int deleted = resolver.delete(deleteUri, null, null);
+        if (deleted > 0) {
+            Log.i(TAG, "Deleted recording (MediaStore): " + name);
+            return true;
         }
         return false;
     }

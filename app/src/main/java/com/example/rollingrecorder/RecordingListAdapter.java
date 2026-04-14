@@ -3,9 +3,10 @@ package com.example.rollingrecorder;
 import android.content.Context;
 import android.content.Intent;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -21,12 +22,20 @@ import java.util.List;
 public class RecordingListAdapter
         extends RecyclerView.Adapter<RecordingListAdapter.ViewHolder> {
 
+    public interface OnRecordingActionListener {
+        void onDeleteRequested(RecordingItem item);
+    }
+
     private final Context context;
+    private final OnRecordingActionListener actionListener;
     private List<RecordingItem> recordings;
 
-    public RecordingListAdapter(Context context, List<RecordingItem> recordings) {
+    public RecordingListAdapter(Context context,
+                                List<RecordingItem> recordings,
+                                OnRecordingActionListener actionListener) {
         this.context = context;
         this.recordings = recordings;
+        this.actionListener = actionListener;
     }
 
     public void updateRecordings(List<RecordingItem> recordings) {
@@ -49,7 +58,11 @@ public class RecordingListAdapter
         RecordingItem item = recordings.get(position);
         holder.nameText.setText(item.getName());
         holder.sizeText.setText(formatFileSize(item.getSize()));
-        holder.openButton.setOnClickListener(v -> openRecording(item));
+        holder.itemView.setOnClickListener(v -> openRecording(item));
+        holder.itemView.setOnLongClickListener(v -> {
+            showContextMenu(v, item);
+            return true;
+        });
     }
 
     @Override
@@ -58,6 +71,28 @@ public class RecordingListAdapter
     }
 
     // ── helpers ─────────────────────────────────────────────────────────
+
+    private void showContextMenu(View anchor, RecordingItem item) {
+        PopupMenu popupMenu = new PopupMenu(context, anchor);
+        popupMenu.inflate(R.menu.recording_item_menu);
+        popupMenu.setOnMenuItemClickListener(menuItem -> handleMenuAction(menuItem, item));
+        popupMenu.show();
+    }
+
+    private boolean handleMenuAction(MenuItem menuItem, RecordingItem item) {
+        int itemId = menuItem.getItemId();
+        if (itemId == R.id.action_play_recording) {
+            openRecording(item);
+            return true;
+        }
+        if (itemId == R.id.action_delete_recording) {
+            if (actionListener != null) {
+                actionListener.onDeleteRequested(item);
+            }
+            return true;
+        }
+        return false;
+    }
 
     private void openRecording(RecordingItem item) {
         Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -82,13 +117,11 @@ public class RecordingListAdapter
     static class ViewHolder extends RecyclerView.ViewHolder {
         final TextView nameText;
         final TextView sizeText;
-        final ImageButton openButton;
 
         ViewHolder(View itemView) {
             super(itemView);
             nameText = itemView.findViewById(R.id.recordingName);
             sizeText = itemView.findViewById(R.id.recordingSize);
-            openButton = itemView.findViewById(R.id.openButton);
         }
     }
 }

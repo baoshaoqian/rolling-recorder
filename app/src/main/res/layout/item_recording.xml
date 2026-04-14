@@ -30,13 +30,6 @@
             android:textSize="12sp" />
     </LinearLayout>
 
-    <ImageButton
-        android:id="@+id/openButton"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Open recording"
-        android:src="@android:drawable/ic_media_play" />
 
 </LinearLayout>
 

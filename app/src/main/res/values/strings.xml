@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Rolling Recorder</string>
+    <string name="play_recording">Play</string>
+    <string name="delete_recording">Delete</string>
+    <string name="recording_deleted">Recording deleted</string>
+    <string name="recording_delete_failed">Unable to delete recording</string>
 </resources>
